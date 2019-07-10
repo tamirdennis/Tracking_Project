@@ -56,11 +56,11 @@ if __name__ == '__main__':
                     im = cv2.imread(fn)
 
                 start_time = time.time()
-                trackers = mot_tracker.update(dets)
+                tracks = mot_tracker.update(dets)
                 cycle_time = time.time() - start_time
                 total_time += cycle_time
 
-                for d in trackers:
+                for d in tracks:
                     print('%d,%d,%.2f,%.2f,%.2f,%.2f,1,-1,-1,-1' % (frame, d[4], d[0], d[1], d[2] - d[0], d[3] - d[1]),
                           file=out_file)
                     if (display):

@@ -37,14 +37,12 @@ class Tracker(object):
         unmatched_detections = []
         if len(detections) > len(tracks):
             unmatched_detections = {i for i in xrange(len(detections))}
-            matched_det_set = set(matched_indices[:, 0])
-            unmatched_detections.difference_update(matched_det_set)
+            unmatched_detections.difference_update(set(matched_indices[:, 0]))
             unmatched_detections = list(unmatched_detections)
 
         else:
             unmatched_trackers = {i for i in xrange(len(tracks))}
-            matched_trk_set = set(matched_indices[:, 1])
-            unmatched_trackers.difference_update(matched_trk_set)
+            unmatched_trackers.difference_update(set(matched_indices[:, 1]))
             unmatched_trackers = list(unmatched_trackers)
 
         matches = []
