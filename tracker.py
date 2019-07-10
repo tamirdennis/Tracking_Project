@@ -18,16 +18,16 @@ class Tracker(object):
         else:
             self.metric_threshold = metric_threshold
 
-    def associate_detections_to_trackers(self, detections, trackers):
+    def associate_detections_to_tracks(self, detections, tracks):
         """
         Assigns detections to tracked object (both represented as bounding boxes)
         
         Returns 3 lists of matches, unmatched_detections and unmatched_trackers
         """
-        if len(trackers) == 0:
+        if len(tracks) == 0:
             return np.empty((0, 2), dtype=int), np.arange(len(detections)), np.empty((0, 5), dtype=int)
 
-        dist_matrix = self.metric.distance(detections, trackers)
+        dist_matrix = self.metric.distance(detections, tracks)
 
         if self.metric_threshold < 0:
             dist_matrix = -dist_matrix
@@ -35,14 +35,14 @@ class Tracker(object):
 
         unmatched_trackers = []
         unmatched_detections = []
-        if len(detections) > len(trackers):
+        if len(detections) > len(tracks):
             unmatched_detections = {i for i in xrange(len(detections))}
             matched_det_set = set(matched_indices[:, 0])
             unmatched_detections.difference_update(matched_det_set)
             unmatched_detections = list(unmatched_detections)
 
         else:
-            unmatched_trackers = {i for i in xrange(len(trackers))}
+            unmatched_trackers = {i for i in xrange(len(tracks))}
             matched_trk_set = set(matched_indices[:, 1])
             unmatched_trackers.difference_update(matched_trk_set)
             unmatched_trackers = list(unmatched_trackers)
@@ -87,7 +87,7 @@ class Tracker(object):
         """
         trks = self.predict()
         ret = []
-        matched, unmatched_dets, unmatched_trks = self.associate_detections_to_trackers(dets, trks)
+        matched, unmatched_dets, unmatched_trks = self.associate_detections_to_tracks(dets, trks)
 
         # update matched trackers with assigned detections
         for t, trk in enumerate(self.tracks):
