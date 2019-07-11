@@ -23,9 +23,8 @@ def parse_args():
 
 if __name__ == '__main__':
     # all train
-    sequences = ['PETS09-S2L1']
-    # , 'TUD-Campus', 'TUD-Staqdtmitte', 'ETH-Bahnhof', 'ETH-Sunnyday', 'ETH-Pedcross2',
-    # 'KITTI-13', 'KITTI-17', 'ADL-Rundle-6', 'ADL-Rundle-8', 'Venice-2'
+    sequences = ['PETS09-S2L1','TUD-Campus','TUD-Stadtmitte','ETH-Bahnhof','ETH-Sunnyday','ETH-Pedcross2','KITTI-13','KITTI-17','ADL-Rundle-6','ADL-Rundle-8','Venice-2']
+
     args = parse_args()
     display = args.display
     phase = 'train'
@@ -42,7 +41,7 @@ if __name__ == '__main__':
         os.makedirs('output')
 
     for seq in sequences:
-        mot_tracker = Tracker("iou", max_age=1)  # create instance of the SORT tracker
+        mot_tracker = Tracker("centroids", max_age=1)  # create instance of the SORT tracker
         seq_dets = np.loadtxt('data/%s/det.txt' % (seq), delimiter=',')  # load detections
         with open('output/%s.txt' % (seq), 'w') as out_file:
             print("Processing %s." % (seq))

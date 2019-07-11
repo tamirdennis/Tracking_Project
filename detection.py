@@ -2,9 +2,20 @@ import numpy as np
 
 
 class Detection(object):
-    def __init__(self, tlwh, confidence=0, feature=""):
+    @staticmethod
+    def parse_det(raw_det):
+        return raw_det
+
+    def __init__(self, raw_det, confidence=0, feature=""):
+        self.parsed_det = self.parse_det(raw_det)
         self.confidence = confidence
         self.feature = feature
+
+
+class BBoxDetection(Detection):
+
+    def __init__(self, raw_det, confidence=0, feature=""):
+        super(BBoxDetection, self).__init__(raw_det, confidence, feature)
 
     def to_tlbr(self):
         tlbr = [None]*4
@@ -29,14 +40,18 @@ class Detection(object):
         r = w / float(h)
         return np.array([x, y, s, r]).reshape((4, 1))
 
-class BBoxDetection(Detection):
-    def __init__(self, tlwh, confidence=0, feature=""):
-        self.tlwh = tlwh #topLeftx,topLeftY,width,height
-        self.confidence = confidence
-        self.feature = feature
+
+class CentroidDetection(Detection):
+
+    @staticmethod
+    def parse_det(raw_det):
+        return 0.5 * (raw_det[:2] + raw_det[2:4])
+
+    def __init__(self, raw_det, confidence=0, feature=""):
+        super(BBoxDetection, self).__init__(raw_det, confidence, feature)
 
     def to_tlbr(self):
-        tlbr = [None]*4
+        tlbr = [None] * 4
         tlbr[0] = self.tlwh[0]
         tlbr[1] = self.tlwh[1]
         tlbr[2] = self.tlwh[0] + self.tlwh[2]
