@@ -41,7 +41,7 @@ if __name__ == '__main__':
         os.makedirs('output')
 
     for seq in sequences:
-        mot_tracker = Tracker("centroids", max_age=1)  # create instance of the SORT tracker
+        mot_tracker = Tracker("iou", max_age=1)  # create instance of the SORT tracker
         seq_dets = np.loadtxt('data/%s/det.txt' % (seq), delimiter=',')  # load detections
         with open('output/%s.txt' % (seq), 'w') as out_file:
             print("Processing %s." % (seq))
