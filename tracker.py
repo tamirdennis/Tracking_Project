@@ -1,12 +1,14 @@
 import numpy as np
 from metric import Metric
 from sklearn.utils.linear_assignment_ import linear_assignment
-from track import Track, KalmanTrack
+from track import Track, KalmanTrack, TrackStatus
+
 
 class Tracker(object):
 
     def __init__(self, metric_str, metric_threshold=None, max_age=30, n_init=3):
-        
+
+        self.num_created_tracks = 0
         self.frame_count = 0
         self.tracks = []
         self.max_age = max_age
@@ -91,16 +93,19 @@ class Tracker(object):
             if (t not in unmatched_trks):
                 d = matched[np.where(matched[:, 1] == t)[0], 0]
                 trk.update(dets[d, :][0])
+                if trk.is_tentative() and trk.hit_streak >= self.n_init:
+                    trk.status = TrackStatus.Confirmed
 
 
         # create and initialise new trackers for unmatched detections
         for i in unmatched_dets:
-            trk = KalmanTrack(dets[i, :], self.n_init, self.max_age)
+            self.num_created_tracks += 1
+            trk = KalmanTrack(self.num_created_tracks, dets[i, :])
             self.tracks.append(trk)
         i = len(self.tracks)
         for trk in reversed(self.tracks):
             d = trk.get_state()[0]
-            if trk.is_confirmed() or self.frame_count <= trk.n_init:
+            if trk.is_confirmed() or self.frame_count <= self.n_init:
                 ret.append(np.concatenate((d, [trk.id + 1])).reshape(1, -1))  # +1 as MOT benchmark requires positive
             i -= 1
             # remove dead tracklet

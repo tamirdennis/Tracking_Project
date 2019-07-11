@@ -11,18 +11,17 @@ def iou(bb_test, bb_gt):
     yy1 = np.maximum(bb_test[1], bb_gt[1])
     xx2 = np.minimum(bb_test[2], bb_gt[2])
     yy2 = np.minimum(bb_test[3], bb_gt[3])
-    w = np.maximum(0., xx2 - xx1)
-    h = np.maximum(0., yy2 - yy1)
-    wh = w * h
-    o = wh / ((bb_test[2] - bb_test[0]) * (bb_test[3] - bb_test[1])
-              + (bb_gt[2] - bb_gt[0]) * (bb_gt[3] - bb_gt[1]) - wh)
-    return o
+
+    wh = np.maximum(0., xx2 - xx1) * np.maximum(0., yy2 - yy1)
+    return (wh / ((bb_test[2] - bb_test[0]) * (bb_test[3] - bb_test[1])
+              + (bb_gt[2] - bb_gt[0]) * (bb_gt[3] - bb_gt[1]) - wh))
 
 
+@jit
 def centroid_distance(det, tck):
     ctr_det = 0.5 * (det[:2] + det[2:4])
     ctr_trk = 0.5 * (tck[:2] + tck[2:4])
-    return euclidean(ctr_det,ctr_trk)
+    return euclidean(ctr_det, ctr_trk)
 
 
 class Metric(object):

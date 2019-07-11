@@ -11,16 +11,10 @@ class TrackStatus(Enum):
 
 class Track(object):
 
-    count = 0
-
-    def __init__(self, init_state, n_init, max_age, feature=None):
+    def __init__(self, track_id, init_state, feature=None):
         self.curr_state = init_state
-        Track.count += 1
-        self.id = Track.count
+        self.id = track_id
         self.hits = 0
-
-        self._max_age = max_age
-        self.n_init = n_init
 
         self.features = []
         if feature is not None:
@@ -55,53 +49,53 @@ class Track(object):
         self.time_since_update = 0
         self.hits += 1
         self.hit_streak += 1
-        if self.is_tentative() and self.hit_streak >= self.n_init:
-            self.status = TrackStatus.Confirmed
         self.curr_state = detection
 
     def get_state(self):
         return self.curr_state
 
-def convert_bbox_to_z(bbox):
-    """
-    Takes a bounding box in the form [x1,y1,x2,y2] and returns z in the form
-      [x,y,s,r] where x,y is the centre of the box and s is the scale/area and r is
-      the aspect ratio
-    """
-    w = bbox[2] - bbox[0]
-    h = bbox[3] - bbox[1]
-    x = bbox[0] + w / 2.
-    y = bbox[1] + h / 2.
-    s = w * h  # scale is just area
-    r = w / float(h)
-    return np.array([x, y, s, r]).reshape((4, 1))
-
-
-def convert_x_to_bbox(x, score=None):
-    """
-    Takes a bounding box in the centre form [x,y,s,r] and returns it in the form
-      [x1,y1,x2,y2] where x1,y1 is the top left and x2,y2 is the bottom right
-    """
-    w = np.sqrt(x[2] * x[3])
-    h = x[2] / w
-    if (score == None):
-        return np.array([x[0] - w / 2., x[1] - h / 2., x[0] + w / 2., x[1] + h / 2.]).reshape((1, 4))
-    else:
-        return np.array([x[0] - w / 2., x[1] - h / 2., x[0] + w / 2., x[1] + h / 2., score]).reshape((1, 5))
-
 
 class KalmanTrack(Track):
+
+    @staticmethod
+    def convert_bbox_to_z(bbox):
+        """
+        Takes a bounding box in the form [x1,y1,x2,y2] and returns z in the form
+          [x,y,s,r] where x,y is the centre of the box and s is the scale/area and r is
+          the aspect ratio
+        """
+        w = bbox[2] - bbox[0]
+        h = bbox[3] - bbox[1]
+        x = bbox[0] + w / 2.
+        y = bbox[1] + h / 2.
+        s = w * h  # scale is just area
+        r = w / float(h)
+        return np.array([x, y, s, r]).reshape((4, 1))
+
+    @staticmethod
+    def convert_x_to_bbox(x, score=None):
+        """
+        Takes a bounding box in the centre form [x,y,s,r] and returns it in the form
+          [x1,y1,x2,y2] where x1,y1 is the top left and x2,y2 is the bottom right
+        """
+        w = np.sqrt(x[2] * x[3])
+        h = x[2] / w
+        if (score == None):
+            return np.array([x[0] - w / 2., x[1] - h / 2., x[0] + w / 2., x[1] + h / 2.]).reshape((1, 4))
+        else:
+            return np.array([x[0] - w / 2., x[1] - h / 2., x[0] + w / 2., x[1] + h / 2., score]).reshape((1, 5))
+
     """
     This class represents the internel state of individual tracked objects observed as bbox.
     """
 
-    def __init__(self, init_state, n_init, max_age):
+    def __init__(self, track_id, init_state):
         """
         Initialises a tracker using initial bounding box.
         """
         # define constant velocity model
 
-        super(KalmanTrack, self).__init__(init_state, n_init, max_age)
+        super(KalmanTrack, self).__init__(track_id, init_state)
         self.kf = KalmanFilter(dim_x=7, dim_z=4)
         self.init_kalman_filter(init_state)
 
@@ -118,14 +112,14 @@ class KalmanTrack(Track):
         self.kf.Q[-1, -1] *= 0.01
         self.kf.Q[4:, 4:] *= 0.01
 
-        self.kf.x[:4] = convert_bbox_to_z(init_state)
+        self.kf.x[:4] = self.convert_bbox_to_z(init_state)
 
     def update(self, bbox):
         """
         Updates the state vector with observed bbox.
         """
         super(KalmanTrack, self).update(bbox)
-        self.kf.update(convert_bbox_to_z(bbox))
+        self.kf.update(self.convert_bbox_to_z(bbox))
 
     def predict(self):
         """
@@ -136,10 +130,10 @@ class KalmanTrack(Track):
             self.kf.x[6] *= 0.0
         self.kf.predict()
 
-        return convert_x_to_bbox(self.kf.x)
+        return self.convert_x_to_bbox(self.kf.x)
 
     def get_state(self):
         """
         Returns the current bounding box estimate.
         """
-        return convert_x_to_bbox(self.kf.x)
+        return self.convert_x_to_bbox(self.kf.x)
