@@ -1,0 +1,7 @@
+.idea/
+*.pyc
+mot_benchmark
+output/*
+venv/*
+data/videos/*
+detectors_models/*

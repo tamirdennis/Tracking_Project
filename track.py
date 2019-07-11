@@ -15,8 +15,8 @@ class Track(object):
 
     def __init__(self, init_state, n_init, max_age, feature=None):
         self.curr_state = init_state
-        self.id = Track.count
         Track.count += 1
+        self.id = Track.count
         self.hits = 0
 
         self._max_age = max_age
@@ -30,8 +30,8 @@ class Track(object):
         self.status = TrackStatus.Tentative
         self.hit_streak = 0
 
-    def __del__(self):
-        Track.count -= 1
+    # def __del__(self):
+    #     Track.count -= 1
 
 
     def is_confirmed(self):
