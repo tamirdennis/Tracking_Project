@@ -3,7 +3,6 @@ import numpy as np
 
 class Detection(object):
     def __init__(self, tlwh, confidence=0, feature=""):
-        self.tlwh = tlwh #topLeftx,topLeftY,width,height
         self.confidence = confidence
         self.feature = feature
 

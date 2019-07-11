@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     model_path_ssd = 'detectors_models/ssd_mobilenet_v1/frozen_inference_graph.pb'
     model_path_rcnn = 'detectors_models/faster_rcnn_inception_v2/frozen_inference_graph.pb'
-    model_path = model_path_ssd
+    model_path = model_path_rcnn
     detector = DetectorAPI(path_to_ckpt=model_path)
     threshold = 0.5
     '''
@@ -40,6 +40,7 @@ if __name__ == '__main__':
     colours = np.random.rand(32, 3)
     args = parse_args()
     display = True
+    open('output/%s.txt' % video_name, 'w+')
 
     while True:
         # read the video and resize
@@ -63,7 +64,7 @@ if __name__ == '__main__':
         tracks = mot_tracker.update(dets)
         cycle_time = time.time() - start_time
         total_time += cycle_time
-        with open('output/%s.txt' % video_name, 'w+') as out_file:
+        with open('output/%s.txt' % video_name, 'a+') as out_file:
             for d in tracks:
                 print('%d,%d,%.2f,%.2f,%.2f,%.2f,1,-1,-1,-1' % (total_frames, d[4], d[0], d[1], d[2] - d[0], d[3] - d[1]),
                       file=out_file)

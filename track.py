@@ -20,7 +20,7 @@ class Track(object):
         self.hits = 0
 
         self._max_age = max_age
-        self._n_init = n_init
+        self.n_init = n_init
 
         self.features = []
         if feature is not None:
@@ -30,8 +30,6 @@ class Track(object):
         self.status = TrackStatus.Tentative
         self.hit_streak = 0
 
-    # def __del__(self):
-    #     Track.count -= 1
 
 
     def is_confirmed(self):
@@ -44,8 +42,7 @@ class Track(object):
         return self.status == TrackStatus.Tentative
 
     def mark_missed(self):
-        self.time_since_update += 1
-        self.age += 1
+        pass
 
     def predict(self):
         if (self.time_since_update > 0):
@@ -58,6 +55,8 @@ class Track(object):
         self.time_since_update = 0
         self.hits += 1
         self.hit_streak += 1
+        if self.is_tentative() and self.hit_streak >= self.n_init:
+            self.status = TrackStatus.Confirmed
         self.curr_state = detection
 
     def get_state(self):

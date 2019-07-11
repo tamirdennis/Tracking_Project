@@ -66,7 +66,7 @@ class Tracker(object):
         for t, trk in enumerate(trks):
             pos = self.tracks[t].predict()[0]
             trk[:] = [pos[0], pos[1], pos[2], pos[3], 0]
-            if (np.any(np.isnan(pos))):
+            if np.any(np.isnan(pos)):
                 to_del.append(t)
         trks = np.ma.compress_rows(np.ma.masked_invalid(trks))
         for t in reversed(to_del):
@@ -92,6 +92,7 @@ class Tracker(object):
                 d = matched[np.where(matched[:, 1] == t)[0], 0]
                 trk.update(dets[d, :][0])
 
+
         # create and initialise new trackers for unmatched detections
         for i in unmatched_dets:
             trk = KalmanTrack(dets[i, :], self.n_init, self.max_age)
@@ -99,12 +100,12 @@ class Tracker(object):
         i = len(self.tracks)
         for trk in reversed(self.tracks):
             d = trk.get_state()[0]
-            if ((trk.time_since_update < 1) and (trk.hit_streak >= self.n_init or self.frame_count <= self.n_init)):
+            if trk.is_confirmed() or self.frame_count <= trk.n_init:
                 ret.append(np.concatenate((d, [trk.id + 1])).reshape(1, -1))  # +1 as MOT benchmark requires positive
             i -= 1
             # remove dead tracklet
-            if (trk.time_since_update > self.max_age):
+            if trk.time_since_update > self.max_age:
                 self.tracks.pop(i)
-        if (len(ret) > 0):
+        if len(ret) > 0:
             return np.concatenate(ret)
         return np.empty((0, 5))
