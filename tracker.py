@@ -1,5 +1,4 @@
 import numpy as np
-from filterpy.kalman import KalmanFilter
 from metric import Metric
 from sklearn.utils.linear_assignment_ import linear_assignment
 from track import Track, KalmanTrack
