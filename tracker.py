@@ -11,6 +11,8 @@ class Tracker(object):
         self.num_created_tracks = 0
         self.frame_count = 0
         self.tracks = []
+        self.framed_matched_track_dets = []
+        self.framed_unmatched_dets = []
         self.max_age = max_age
         self.n_init = n_init
         self.metric = Metric(metric_str)
@@ -21,12 +23,17 @@ class Tracker(object):
 
     def associate_detections_to_tracks(self, detections, tracks):
         """
-        Assigns detections to tracked object (both represented as bounding boxes)
+        Assigns detections to tracked object - assuming both represented as bounding boxes in input!
         
-        Returns 3 lists of matches, unmatched_detections and unmatched_trackers
+        Updating self.framed_matched_track_dets list with the matched detections and tracks(as class) - list of tuples.
+        Updating self.framed_unmatched_dets with the unmatched detections as bounding boxes
         """
+
+        self.framed_matched_track_dets = []
+        self.framed_unmatched_dets = []
+
         if len(tracks) == 0:
-            return np.empty((0, 2), dtype=int), np.arange(len(detections)), np.empty((0, 5), dtype=int)
+            self.framed_unmatched_dets = detections
 
         dist_matrix = self.metric.distance(detections, tracks)
 
@@ -34,31 +41,14 @@ class Tracker(object):
             dist_matrix = -dist_matrix
         matched_indices = linear_assignment(dist_matrix)
 
-        unmatched_trackers = []
-        unmatched_detections = []
         if len(detections) > len(tracks):
-            unmatched_detections = {i for i in xrange(len(detections))}
-            unmatched_detections.difference_update(set(matched_indices[:, 0]))
-            unmatched_detections = list(unmatched_detections)
+            self.framed_unmatched_dets = [det for d, det in enumerate(detections) if d not in matched_indices[:, 0]]
 
-        else:
-            unmatched_trackers = {i for i in xrange(len(tracks))}
-            unmatched_trackers.difference_update(set(matched_indices[:, 1]))
-            unmatched_trackers = list(unmatched_trackers)
-
-        matches = []
         for m in matched_indices:
             if dist_matrix[m[0], m[1]] > self.metric_threshold:
-                unmatched_detections.append(m[0])
-                unmatched_trackers.append(m[1])
+                self.framed_unmatched_dets.append(detections[m[0]])
             else:
-                matches.append(m.reshape(1, 2))
-        if len(matches) == 0:
-            matches = np.empty((0, 2), dtype=int)
-        else:
-            matches = np.concatenate(matches, axis=0)
-        
-        return matches, np.array(unmatched_detections), np.array(unmatched_trackers)
+                self.framed_matched_track_dets.append((detections[m[0]], self.tracks[m[1]]))
 
     def predict(self):
         self.frame_count += 1
@@ -73,6 +63,7 @@ class Tracker(object):
         trks = np.ma.compress_rows(np.ma.masked_invalid(trks))
         for t in reversed(to_del):
             self.tracks.pop(t)
+
         return trks
 
     def update(self, dets):
@@ -86,22 +77,21 @@ class Tracker(object):
         """
         trks = self.predict()
         ret = []
-        matched, unmatched_dets, unmatched_trks = self.associate_detections_to_tracks(dets, trks)
+        self.associate_detections_to_tracks(dets, trks)
+        # update matched tracks with assigned detections
 
-        # update matched trackers with assigned detections
-        for t, trk in enumerate(self.tracks):
-            if (t not in unmatched_trks):
-                d = matched[np.where(matched[:, 1] == t)[0], 0]
-                trk.update(dets[d, :][0])
-                if trk.is_tentative() and trk.hit_streak >= self.n_init:
-                    trk.status = TrackStatus.Confirmed
-
+        for (det, trk) in self.framed_matched_track_dets:
+            trk.update(det)
+            if trk.is_tentative() and trk.hit_streak >= self.n_init:
+                trk.status = TrackStatus.Confirmed
 
         # create and initialise new trackers for unmatched detections
-        for i in unmatched_dets:
+
+        for det in self.framed_unmatched_dets:
             self.num_created_tracks += 1
-            trk = KalmanTrack(self.num_created_tracks, dets[i, :])
+            trk = KalmanTrack(self.num_created_tracks, det)
             self.tracks.append(trk)
+
         i = len(self.tracks)
         for trk in reversed(self.tracks):
             d = trk.get_state()[0]

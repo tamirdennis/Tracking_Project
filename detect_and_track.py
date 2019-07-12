@@ -26,7 +26,7 @@ if __name__ == '__main__':
     model_path_rcnn = 'detectors_models/faster_rcnn_inception_v2/frozen_inference_graph.pb'
     model_path = model_path_rcnn
     detector = DetectorAPI(path_to_ckpt=model_path)
-    threshold = 0.5
+    threshold = 0.7
     '''
     Threshold should be 0.5 for ssd_mobilenet_v1
                         0.7 for faster_rcnn_inception_v2

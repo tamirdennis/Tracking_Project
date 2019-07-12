@@ -5,3 +5,4 @@ output/*
 venv/*
 data/videos/*
 detectors_models/*
+old_tracker.py
