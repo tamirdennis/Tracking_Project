@@ -70,7 +70,7 @@ if __name__ == '__main__':
                       file=out_file)
                 if (display):
                     d = d.astype(np.int32)
-                    rectangle_colors = (colours[d[4] % 32, :] * 255).astype(int)
+                    rectangle_colors = (colours[d[4] % 32, :] * 255).astype(float)
                     cv2.rectangle(img, (d[0], d[1]), (d[2], d[3]), color=rectangle_colors, thickness=2)
                     cv2.putText(img, 'id: {}'.format(d[4]), (d[0], d[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                                 rectangle_colors, 2)

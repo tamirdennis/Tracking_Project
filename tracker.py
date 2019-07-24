@@ -1,6 +1,7 @@
 import numpy as np
 from metric import Metric
 from sklearn.utils.linear_assignment_ import linear_assignment
+from scipy.optimize import linear_sum_assignment
 from track import Track, KalmanTrack, TrackStatus
 
 
@@ -24,7 +25,7 @@ class Tracker(object):
     def associate_detections_to_tracks(self, detections, tracks):
         """
         Assigns detections to tracked object - assuming both represented as bounding boxes in input!
-        
+
         Updating self.framed_matched_track_dets list with the matched detections and tracks(as class) - list of tuples.
         Updating self.framed_unmatched_dets with the unmatched detections as bounding boxes
         """
@@ -39,16 +40,16 @@ class Tracker(object):
 
         if self.metric_threshold < 0:
             dist_matrix = -dist_matrix
-        matched_indices = linear_assignment(dist_matrix)
+        row, col = linear_sum_assignment(dist_matrix)
 
         if len(detections) > len(tracks):
-            self.framed_unmatched_dets = [det for d, det in enumerate(detections) if d not in matched_indices[:, 0]]
+            self.framed_unmatched_dets = [det for d, det in enumerate(detections) if d not in row]
 
-        for m in matched_indices:
-            if dist_matrix[m[0], m[1]] > self.metric_threshold:
-                self.framed_unmatched_dets.append(detections[m[0]])
+        for det, trk in zip(row, col):
+            if dist_matrix[det, trk] > self.metric_threshold:
+                self.framed_unmatched_dets.append(detections[det])
             else:
-                self.framed_matched_track_dets.append((detections[m[0]], self.tracks[m[1]]))
+                self.framed_matched_track_dets.append((detections[det], self.tracks[trk]))
 
     def predict(self):
         self.frame_count += 1

@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     if not os.path.exists('output'):
         os.makedirs('output')
-    for _ in range(100):
+    for _ in range(20):
         for seq in sequences:
             mot_tracker = Tracker("iou", max_age=1)  # create instance of the SORT tracker
             seq_dets = np.loadtxt('data/%s/det.txt' % (seq), delimiter=',')  # load detections
