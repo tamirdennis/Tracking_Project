@@ -3,13 +3,10 @@ from __future__ import print_function
 
 import os.path
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from skimage import io
 import time
 import argparse
 
-from track import KalmanTrack, ParticleTrack
+from track import KalmanCentroidTrack, ParticleTrack, KalmanBBoxTrack
 from tracker import Tracker
 import cv2
 
@@ -32,7 +29,13 @@ if __name__ == '__main__':
     phase = 'train'
     total_time = 0.0
     total_frames = 0
-    colours = np.random.rand(32, 3)  # used only for display
+    # for metric centroid, use only centroid like tracks as track_type: ParticleTrack, KalmanCentroidTrack.
+    # and for iou use only KalmanBBoxTrack
+    metric = "centroids"
+    # The track type to use:
+    track_type = ParticleTrack
+    # Change to True in order to see the track projection on only one track at a time:
+    show_one_projection = False
     if (display):
         if not os.path.exists('mot_benchmark'):
             print(
@@ -43,14 +46,14 @@ if __name__ == '__main__':
         os.makedirs('output')
     for _ in range(1):
         for seq in sequences:
-            mot_tracker = Tracker("centroids", max_age=5, track_type=ParticleTrack, n_init=6)  # create instance of the SORT tracker
+            mot_tracker = Tracker(metric, max_age=5, track_type=track_type, n_init=6,
+                                  project=display, project_one=show_one_projection)  # create instance of the SORT tracker
             seq_dets = np.loadtxt('data/%s/det.txt' % (seq), delimiter=',')  # load detections
             with open('output/%s.txt' % (seq), 'w') as out_file:
                 # print("Processing %s." % (seq))
                 for frame in range(int(seq_dets[:, 0].max())):
                     frame += 1  # detection and frame numbers begin at 1
-                    dets = seq_dets[seq_dets[:, 0] == frame, 2:7]
-                    dets[:, 2:4] += dets[:, 0:2]  # convert to [x1,y1,w,h] to [x1,y1,x2,y2]
+                    dets = seq_dets[seq_dets[:, 0] == frame, 2:6]
                     total_frames += 1
 
                     if (display):
@@ -58,28 +61,19 @@ if __name__ == '__main__':
                         im = cv2.imread(fn)
 
                     start_time = time.time()
-                    tracks = mot_tracker.update(dets)
+                    tracks = mot_tracker.update(dets, image=im)
                     cycle_time = time.time() - start_time
                     total_time += cycle_time
 
                     for trk in tracks:
-                        #for particle in trk.particles[:, :2]:
-                         #   particle = particle.astype(int)
-                           # cv2.circle(im, (particle[0], particle[1]), 1, color=[0., 0., 255.])
                         trk_id_show = trk.id + 1
                         d = trk.get_state()
-                        print('%d,%.2f,%.2f,%.2f' % (frame, trk_id_show, d[0], d[1]),
+                        print('%d,%s' % (frame, trk.data_for_output_file()),
                               file=out_file)
-                        if (display):
-                            d = d.astype(np.int32)
-                            centroid_colors = (colours[trk_id_show % 32, :] * 255).astype(float)
-                            cv2.circle(im, (d[0], d[1]), 10, color=centroid_colors, thickness=2)
-                            cv2.putText(im, 'id: {}'.format(trk_id_show), (d[0], d[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                                        centroid_colors, 2)
 
                     if (display):
                         cv2.imshow('image', im)
-                        if cv2.waitKey(20) & 0xFF == ord('q'):
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
                             break
 
                 cv2.destroyAllWindows()
