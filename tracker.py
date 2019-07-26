@@ -7,7 +7,7 @@ from track import Track, KalmanTrack, TrackStatus
 
 class Tracker(object):
 
-    def __init__(self, metric_str, metric_threshold=None, max_age=30, n_init=3):
+    def __init__(self, metric_str, metric_threshold=None, max_age=30, n_init=3, track_type=KalmanTrack):
 
         self.num_created_tracks = 0
         self.frame_count = 0
@@ -16,6 +16,7 @@ class Tracker(object):
         self.framed_unmatched_dets = []
         self.max_age = max_age
         self.n_init = n_init
+        self.track_type = track_type
         self.metric = Metric(metric_str)
         if metric_threshold is None:
             self.metric_threshold = self.metric.threshold
@@ -54,11 +55,11 @@ class Tracker(object):
     def predict(self):
         self.frame_count += 1
         # get predicted locations from existing trackers.
-        trks = np.zeros((len(self.tracks), 5))
+        trks = np.zeros((len(self.tracks), 2))
         to_del = []
         for t, trk in enumerate(trks):
-            pos = self.tracks[t].predict()[0]
-            trk[:] = [pos[0], pos[1], pos[2], pos[3], 0]
+            pos = self.tracks[t].predict()
+            trk[:] = [pos[0], pos[1]]
             if np.any(np.isnan(pos)):
                 to_del.append(t)
         trks = np.ma.compress_rows(np.ma.masked_invalid(trks))
@@ -76,9 +77,12 @@ class Tracker(object):
 
         NOTE: The number of objects returned may differ from the number of detections provided.
         """
-        trks = self.predict()
+        dets[:, 0] = (dets[:, 0] + dets[:, 2]) / 2.0
+        dets[:, 1] = (dets[:, 1] + dets[:, 3]) / 2.0
+        dets = dets[:, :2]
+        tracks_predicts = self.predict()
         ret = []
-        self.associate_detections_to_tracks(dets, trks)
+        self.associate_detections_to_tracks(dets, tracks_predicts)
         # update matched tracks with assigned detections
 
         for (det, trk) in self.framed_matched_track_dets:
@@ -90,18 +94,19 @@ class Tracker(object):
 
         for det in self.framed_unmatched_dets:
             self.num_created_tracks += 1
-            trk = KalmanTrack(self.num_created_tracks, det)
+            trk = self.track_type(self.num_created_tracks, det)
             self.tracks.append(trk)
 
         i = len(self.tracks)
         for trk in reversed(self.tracks):
-            d = trk.get_state()[0]
+            d = trk.get_state()
             if trk.is_confirmed() or self.frame_count <= self.n_init:
-                ret.append(np.concatenate((d, [trk.id + 1])).reshape(1, -1))  # +1 as MOT benchmark requires positive
+                # ret.append(np.concatenate((d, [trk.id + 1])).reshape(1, -1))  # +1 as MOT benchmark requires positive
+                ret.append(trk)
             i -= 1
             # remove dead tracklet
             if trk.time_since_update > self.max_age:
                 self.tracks.pop(i)
         if len(ret) > 0:
-            return np.concatenate(ret)
+            return ret
         return np.empty((0, 5))

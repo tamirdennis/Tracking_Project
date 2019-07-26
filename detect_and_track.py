@@ -7,6 +7,7 @@ import time
 import argparse
 import cv2
 
+from track import KalmanTrack, ParticleTrack
 from tracker import Tracker
 from fl_detector import DetectorAPI
 
@@ -34,7 +35,7 @@ if __name__ == '__main__':
     video_name = "aerial2.mp4"
     cap = cv2.VideoCapture('data/videos/{}'.format(video_name))
 
-    mot_tracker = Tracker("iou", max_age=1)
+    mot_tracker = Tracker("centroids", max_age=6, track_type=ParticleTrack, n_init=6)
     total_time = 0.0
     total_frames = 0
     colours = np.random.rand(32, 3)
@@ -65,15 +66,17 @@ if __name__ == '__main__':
         cycle_time = time.time() - start_time
         total_time += cycle_time
         with open('output/%s.txt' % video_name, 'a+') as out_file:
-            for d in tracks:
-                print('%d,%d,%.2f,%.2f,%.2f,%.2f,1,-1,-1,-1' % (total_frames, d[4], d[0], d[1], d[2] - d[0], d[3] - d[1]),
+            for trk in tracks:
+                trk_id_show = trk.id + 1
+                d = trk.get_state()
+                print('%d,%.2f,%.2f,%.2f' % (total_frames, trk_id_show, d[0], d[1]),
                       file=out_file)
                 if (display):
                     d = d.astype(np.int32)
-                    rectangle_colors = (colours[d[4] % 32, :] * 255).astype(float)
-                    cv2.rectangle(img, (d[0], d[1]), (d[2], d[3]), color=rectangle_colors, thickness=2)
-                    cv2.putText(img, 'id: {}'.format(d[4]), (d[0], d[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                                rectangle_colors, 2)
+                    centroid_colors = (colours[trk_id_show % 32, :] * 255).astype(float)
+                    cv2.circle(img, (d[0], d[1]), 10, color=centroid_colors, thickness=2)
+                    cv2.putText(img, 'id: {}'.format(trk_id_show), (d[0], d[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                centroid_colors, 2)
 
             if (display):
                 cv2.imshow('preview', img)

@@ -9,8 +9,10 @@ from skimage import io
 import time
 import argparse
 
+from track import KalmanTrack, ParticleTrack
 from tracker import Tracker
 import cv2
+
 
 def parse_args():
     """Parse input arguments."""
@@ -39,9 +41,9 @@ if __name__ == '__main__':
 
     if not os.path.exists('output'):
         os.makedirs('output')
-    for _ in range(20):
+    for _ in range(1):
         for seq in sequences:
-            mot_tracker = Tracker("iou", max_age=1)  # create instance of the SORT tracker
+            mot_tracker = Tracker("centroids", max_age=5, track_type=ParticleTrack, n_init=6)  # create instance of the SORT tracker
             seq_dets = np.loadtxt('data/%s/det.txt' % (seq), delimiter=',')  # load detections
             with open('output/%s.txt' % (seq), 'w') as out_file:
                 # print("Processing %s." % (seq))
@@ -60,19 +62,24 @@ if __name__ == '__main__':
                     cycle_time = time.time() - start_time
                     total_time += cycle_time
 
-                    for d in tracks:
-                        print('%d,%d,%.2f,%.2f,%.2f,%.2f,1,-1,-1,-1' % (frame, d[4], d[0], d[1], d[2] - d[0], d[3] - d[1]),
+                    for trk in tracks:
+                        #for particle in trk.particles[:, :2]:
+                         #   particle = particle.astype(int)
+                           # cv2.circle(im, (particle[0], particle[1]), 1, color=[0., 0., 255.])
+                        trk_id_show = trk.id + 1
+                        d = trk.get_state()
+                        print('%d,%.2f,%.2f,%.2f' % (frame, trk_id_show, d[0], d[1]),
                               file=out_file)
                         if (display):
                             d = d.astype(np.int32)
-                            rectangle_colors = (colours[d[4] % 32, :]*255).astype(int)
-                            cv2.rectangle(im, (d[0], d[1]), (d[2], d[3]), color=rectangle_colors, thickness=2)
-                            cv2.putText(im, 'id: {}'.format(d[4]),(d[0], d[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                                        rectangle_colors, 2)
+                            centroid_colors = (colours[trk_id_show % 32, :] * 255).astype(float)
+                            cv2.circle(im, (d[0], d[1]), 10, color=centroid_colors, thickness=2)
+                            cv2.putText(im, 'id: {}'.format(trk_id_show), (d[0], d[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                        centroid_colors, 2)
 
                     if (display):
                         cv2.imshow('image', im)
-                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                        if cv2.waitKey(20) & 0xFF == ord('q'):
                             break
 
                 cv2.destroyAllWindows()

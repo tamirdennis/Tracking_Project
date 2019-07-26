@@ -17,11 +17,9 @@ def iou(bb_test, bb_gt):
               + (bb_gt[2] - bb_gt[0]) * (bb_gt[3] - bb_gt[1]) - wh))
 
 
-@jit
+
 def centroid_distance(det, tck):
-    ctr_det = 0.5 * (det[:2] + det[2:4])
-    ctr_trk = 0.5 * (tck[:2] + tck[2:4])
-    return euclidean(ctr_det, ctr_trk)
+    return euclidean(det, tck)
 
 
 class Metric(object):
@@ -33,7 +31,7 @@ class Metric(object):
     """
 
     metrics_dict = {"iou": iou, "centroids": centroid_distance}
-    threshold_dict = {"iou": -0.3, "centroids": 40}
+    threshold_dict = {"iou": -0.3, "centroids": 75}
 
     def __init__(self, metric_str):
         self.metric = Metric.metrics_dict[metric_str]
