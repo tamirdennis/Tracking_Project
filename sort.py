@@ -37,7 +37,6 @@ if __name__ == '__main__':
     track_type = ParticleTrack
     # Change to True in order to see the track projection on only one track at a time:
     show_one_projection = False
-    # save_pics_dir = "pictures_saved\\for_video_with_features\\"
     if (display):
         if not os.path.exists('mot_benchmark'):
             print(
@@ -77,9 +76,8 @@ if __name__ == '__main__':
                               file=out_file)
 
                     if (display):
-                        # cv2.imwrite(save_pics_dir + '{}.png'.format(frame), im)
                         cv2.imshow('image', im)
-                        if cv2.waitKey(40) & 0xFF == ord('q'):
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
                             break
 
                 cv2.destroyAllWindows()

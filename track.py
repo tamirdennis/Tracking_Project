@@ -28,11 +28,9 @@ class Track(object):
     colours = np.random.rand(32, 3)  # used only for display
     track_dim = 2
 
-    def __init__(self, track_id, init_state, feature=None, features_ext_interval=5):
+    def __init__(self, track_id, init_state, feature=None, features_ext_interval=7):
         self.curr_state = init_state
         self.id = track_id
-        # os.mkdir("pictures_saved/{}".format(self.id))
-        # self.count = 0
         self.hits = 0
         self.features_ext_interval = features_ext_interval
         self.time_since_features_ext = features_ext_interval + 1
@@ -73,18 +71,59 @@ class Track(object):
     def get_state(self):
         return self.curr_state
 
-    def extract_features(self, cropped_img):
-        # self.count += 1
-        # kernel = np.ones((2, 2), np.uint8)
-        # self.features = cv2.morphologyEx(cropped_img, cv2.MORPH_CLOSE, kernel, iterations=2)
-        # cv2.imwrite("pictures_saved/{}/{}.png".format(self.id, self.count), cropped_img)
-        # self.count += 1
-        # cv2.imshow("cropped", cropped_img)
-        # cv2.waitKey(0)
-        hist = cv2.calcHist([cropped_img], [0, 1, 2], None, [8, 8, 8],
+    @staticmethod
+    def calc_hist(image):
+        """
+        calculating 3D histogram of an image with 16 BINS in each dimension.
+        :param image:
+        :return: normalized histogram.
+        """
+        hist = cv2.calcHist([image], [0, 1, 2], None, [16, 16, 16],
                             [0, 256, 0, 256, 0, 256])
         hist = cv2.normalize(hist, hist).flatten()
-        self.features["hist"] = hist
+        return hist
+
+    def extract_features_from_img(self, cropped_img):
+        """
+        Extracting the histogram from prepared image of the tracked object.
+        Setting zero to the self.time_since_features_ext timer.
+        :param cropped_img:
+
+        """
+        self.features["hist"] = Track.calc_hist(cropped_img)
+        self.time_since_features_ext = 0
+
+    def extract_features_up_down(self, cropped_up_down):
+        """
+        similar to the extract_features_from_img but taking two histograms of the upper crop and the lower crop.
+        :param cropped_up_down:
+        :return:
+        """
+        self.features["hist_up"] = Track.calc_hist(cropped_up_down[0])
+        self.features["hist_down"] = Track.calc_hist(cropped_up_down[1])
+        self.time_since_features_ext = 0
+
+    def get_centroid(self):
+        pass
+
+    def extract_features(self, image, h, w):
+        """
+        similar to the extract_features_up_down but taking the location of the crops according
+        to the track current centroid, the height and the width of the tracked object.
+        :param image: the entire frame
+        :param h: height
+        :param w: width
+        :return:
+        """
+        cent = self.get_centroid()
+        x1 = int(cent[0] - w/2)
+        x2 = int(cent[0] + w/2)
+        y1_up = int(cent[1])
+        crop_up = image[y1_up:int(cent[1] + h/2), x1:x2]
+        crop_down = image[int(cent[1] - h/2):y1_up, x1:x2]
+
+        self.features["hist_up"] = Track.calc_hist(crop_up)
+        self.features["hist_down"] = Track.calc_hist(crop_down)
         self.time_since_features_ext = 0
 
     def data_for_output_file(self):
@@ -199,6 +238,9 @@ class KalmanCentroidTrack(Track):
     def data_for_output_file(self):
         return self._cent_data_to_output()
 
+    def get_centroid(self):
+        return self.get_state()
+
 
 class KalmanBBoxTrack(Track):
 
@@ -299,6 +341,9 @@ class KalmanBBoxTrack(Track):
     def data_for_output_file(self):
         return self._bbox_data_to_output()
 
+    def get_centroid(self):
+        return self.convert_bbox_to_z(self.get_state())[:2]
+
 
 class ParticleTrack(Track):
     track_dim = 2
@@ -380,6 +425,9 @@ class ParticleTrack(Track):
         x = [np.average(self.particles[:, 0], weights=self.weights, axis=0)]
         y = [np.average(self.particles[:, 1], weights=self.weights, axis=0)]
         return np.array([x, y])
+
+    def get_centroid(self):
+        return self.get_state()
 
     def project_on_image(self, image):
         # for particle in self.particles[:, :2]:

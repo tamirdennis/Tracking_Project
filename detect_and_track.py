@@ -49,8 +49,8 @@ if __name__ == '__main__':
     # Change to True in order to see the track projection on only one track at a time:
     show_one_projection = False
 
-    mot_tracker = Tracker(metric, max_age=5, track_type=track_type, n_init=6,
-                          project=display, project_one=show_one_projection)  # create instance of the SORT tracker
+    mot_tracker = Tracker(metric, max_age=5, track_type=track_type, n_init=3,
+                          project=display, project_one=show_one_projection, consider_features=True)  # create instance of the SORT tracker
 
     open('output/%s.txt' % video_name, 'w+')
 
