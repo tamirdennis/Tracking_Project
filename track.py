@@ -4,6 +4,7 @@ from filterpy.kalman import KalmanFilter
 from numpy.random import uniform, normal
 from scipy.stats import norm
 import cv2
+import os
 
 
 class TrackStatus(Enum):
@@ -27,20 +28,21 @@ class Track(object):
     colours = np.random.rand(32, 3)  # used only for display
     track_dim = 2
 
-    def __init__(self, track_id, init_state, feature=None):
+    def __init__(self, track_id, init_state, feature=None, features_ext_interval=5):
         self.curr_state = init_state
         self.id = track_id
+        # os.mkdir("pictures_saved/{}".format(self.id))
+        # self.count = 0
         self.hits = 0
-
-        self.features = []
+        self.features_ext_interval = features_ext_interval
+        self.time_since_features_ext = features_ext_interval + 1
+        self.features = {}
         if feature is not None:
-            self.features.append(feature)
+            self.features["init_feature"] = feature
         self.age = 0
         self.time_since_update = 0
         self.status = TrackStatus.Tentative
         self.hit_streak = 0
-
-
 
     def is_confirmed(self):
         return self.status == TrackStatus.Confirmed
@@ -55,9 +57,10 @@ class Track(object):
         pass
 
     def predict(self):
-        if (self.time_since_update > 0):
+        if self.time_since_update > 0:
             self.hit_streak = 0
         self.time_since_update += 1
+        self.time_since_features_ext += 1
         self.age += 1
         return self.get_state()
 
@@ -69,6 +72,20 @@ class Track(object):
 
     def get_state(self):
         return self.curr_state
+
+    def extract_features(self, cropped_img):
+        # self.count += 1
+        # kernel = np.ones((2, 2), np.uint8)
+        # self.features = cv2.morphologyEx(cropped_img, cv2.MORPH_CLOSE, kernel, iterations=2)
+        # cv2.imwrite("pictures_saved/{}/{}.png".format(self.id, self.count), cropped_img)
+        # self.count += 1
+        # cv2.imshow("cropped", cropped_img)
+        # cv2.waitKey(0)
+        hist = cv2.calcHist([cropped_img], [0, 1, 2], None, [8, 8, 8],
+                            [0, 256, 0, 256, 0, 256])
+        hist = cv2.normalize(hist, hist).flatten()
+        self.features["hist"] = hist
+        self.time_since_features_ext = 0
 
     def data_for_output_file(self):
         pass
@@ -118,7 +135,6 @@ class KalmanCentroidTrack(Track):
         :param dets: the detections in some format.
         :return: compiled detections
         """
-        dets[:, 2:4] += dets[:, 0:2]
         dets[:, 0] = (dets[:, 0] + dets[:, 2]) / 2.0
         dets[:, 1] = (dets[:, 1] + dets[:, 3]) / 2.0
         dets = dets[:, :2]
@@ -194,7 +210,6 @@ class KalmanBBoxTrack(Track):
         :param dets: the detections in some format.
         :return: compiled detections
         """
-        dets[:, 2:4] += dets[:, 0:2]
         return dets
 
     @staticmethod
@@ -295,7 +310,6 @@ class ParticleTrack(Track):
         :param dets: the detections in some format.
         :return: compiled detections
         """
-        dets[:, 2:4] += dets[:, 0:2]
         dets[:, 0] = (dets[:, 0] + dets[:, 2]) / 2.0
         dets[:, 1] = (dets[:, 1] + dets[:, 3]) / 2.0
         dets = dets[:, :2]
@@ -368,9 +382,9 @@ class ParticleTrack(Track):
         return np.array([x, y])
 
     def project_on_image(self, image):
-        for particle in self.particles[:, :2]:
-            particle = particle.astype(int)
-            cv2.circle(image, (particle[0], particle[1]), 1, color=[0., 0., 255.])
+        # for particle in self.particles[:, :2]:
+        #     particle = particle.astype(int)
+        #     cv2.circle(image, (particle[0], particle[1]), 1, color=[0., 0., 255.])
         self._project_centroid_on_image(image)
 
     def data_for_output_file(self):

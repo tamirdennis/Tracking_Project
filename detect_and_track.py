@@ -1,5 +1,5 @@
 
-from __future__ import print_function
+# from __future__ import print_function
 
 
 import numpy as np
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
         dets = np.array([[boxes[i][1], boxes[i][0], boxes[i][3], boxes[i][2]] for i in range(len(boxes)) if
                 classes[i] == 1 and scores[i] > threshold]).reshape(-1, 4)
-        dets[:, 2:4] -= dets[:, 0:2]
+        # dets[:, 2:4] -= dets[:, 0:2]
         start_time = time.time()
         tracks = mot_tracker.update(dets, image=img)
         cycle_time = time.time() - start_time

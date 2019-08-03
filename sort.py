@@ -1,5 +1,5 @@
 
-from __future__ import print_function
+# from __future__ import print_function
 
 import os.path
 import numpy as np
@@ -9,6 +9,7 @@ import argparse
 from track import KalmanCentroidTrack, ParticleTrack, KalmanBBoxTrack
 from tracker import Tracker
 import cv2
+import scipy.stats as st
 
 
 def parse_args():
@@ -36,6 +37,7 @@ if __name__ == '__main__':
     track_type = ParticleTrack
     # Change to True in order to see the track projection on only one track at a time:
     show_one_projection = False
+    # save_pics_dir = "pictures_saved\\for_video_with_features\\"
     if (display):
         if not os.path.exists('mot_benchmark'):
             print(
@@ -46,14 +48,15 @@ if __name__ == '__main__':
         os.makedirs('output')
     for _ in range(1):
         for seq in sequences:
-            mot_tracker = Tracker(metric, max_age=5, track_type=track_type, n_init=6,
-                                  project=display, project_one=show_one_projection)  # create instance of the SORT tracker
+            mot_tracker = Tracker(metric, max_age=5, track_type=track_type, n_init=3,
+                                  project=display, project_one=show_one_projection, consider_features=True)  # create instance of the SORT tracker
             seq_dets = np.loadtxt('data/%s/det.txt' % (seq), delimiter=',')  # load detections
             with open('output/%s.txt' % (seq), 'w') as out_file:
                 # print("Processing %s." % (seq))
                 for frame in range(int(seq_dets[:, 0].max())):
                     frame += 1  # detection and frame numbers begin at 1
                     dets = seq_dets[seq_dets[:, 0] == frame, 2:6]
+                    dets[:, 2:4] += dets[:, 0:2]  # from x, y, w, h to x1, y1, x2, y2
                     total_frames += 1
 
                     if (display):
@@ -61,6 +64,8 @@ if __name__ == '__main__':
                         im = cv2.imread(fn)
 
                     start_time = time.time()
+                    if not display:
+                        im = None
                     tracks = mot_tracker.update(dets, image=im)
                     cycle_time = time.time() - start_time
                     total_time += cycle_time
@@ -72,8 +77,9 @@ if __name__ == '__main__':
                               file=out_file)
 
                     if (display):
+                        # cv2.imwrite(save_pics_dir + '{}.png'.format(frame), im)
                         cv2.imshow('image', im)
-                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                        if cv2.waitKey(40) & 0xFF == ord('q'):
                             break
 
                 cv2.destroyAllWindows()

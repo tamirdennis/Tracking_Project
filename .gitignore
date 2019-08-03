@@ -6,3 +6,6 @@ venv/*
 data/videos/*
 detectors_models/*
 old_tracker.py
+pictures_saved/*
+pictures_saved2/*
+images/*

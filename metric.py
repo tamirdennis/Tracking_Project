@@ -30,7 +30,7 @@ class Metric(object):
     """
 
     metrics_dict = {"iou": iou, "centroids": centroid_distance}
-    threshold_dict = {"iou": -0.3, "centroids": 50}
+    threshold_dict = {"iou": -0.3, "centroids": 55}
 
     def __init__(self, metric_str):
         self.metric = Metric.metrics_dict[metric_str]
