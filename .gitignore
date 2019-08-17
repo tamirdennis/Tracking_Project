@@ -4,8 +4,12 @@ mot_benchmark
 output/*
 venv/*
 data/videos/*
+data/pku_raid/*
 detectors_models/*
 old_tracker.py
 pictures_saved/*
 pictures_saved2/*
 images/*
+.ipynb_checkpoints/*
+models/*
+data/RAiD_Dataset-master/*

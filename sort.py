@@ -1,6 +1,3 @@
-
-# from __future__ import print_function
-
 import os.path
 import numpy as np
 import time
@@ -19,6 +16,9 @@ def parse_args():
                         action='store_true')
     args = parser.parse_args()
     return args
+
+
+# this main is only for the use of the benchmark data. if you want to use a detector, use the file detect_and_track.py
 
 
 if __name__ == '__main__':
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     for _ in range(1):
         for seq in sequences:
             mot_tracker = Tracker(metric, max_age=5, track_type=track_type, n_init=3,
-                                  project=display, project_one=show_one_projection, consider_features=True)  # create instance of the SORT tracker
+                                  project=display, project_one=show_one_projection, use_reid_model=True)  # create instance of the SORT tracker
             seq_dets = np.loadtxt('data/%s/det.txt' % (seq), delimiter=',')  # load detections
             with open('output/%s.txt' % (seq), 'w') as out_file:
                 # print("Processing %s." % (seq))

@@ -28,7 +28,7 @@ class Track(object):
     colours = np.random.rand(32, 3)  # used only for display
     track_dim = 2
 
-    def __init__(self, track_id, init_state, feature=None, features_ext_interval=7):
+    def __init__(self, track_id, init_state, feature=None, features_ext_interval=5):
         self.curr_state = init_state
         self.id = track_id
         self.hits = 0
@@ -106,7 +106,7 @@ class Track(object):
     def get_centroid(self):
         pass
 
-    def extract_features(self, image, h, w):
+    def extract_hist_features(self, image, h, w):
         """
         similar to the extract_features_up_down but taking the location of the crops according
         to the track current centroid, the height and the width of the tracked object.

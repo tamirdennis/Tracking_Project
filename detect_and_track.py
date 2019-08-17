@@ -26,12 +26,14 @@ if __name__ == '__main__':
 
     model_path_ssd = 'detectors_models/ssd_mobilenet_v1/frozen_inference_graph.pb'
     model_path_rcnn = 'detectors_models/faster_rcnn_inception_v2/frozen_inference_graph.pb'
-    model_path = model_path_rcnn
+    model_path_ssd_resnet_mine = 'detectors_models/ssd_resnet50_my_detector/frozen_inference_graph.pb'
+    model_path = model_path_ssd_resnet_mine
     detector = DetectorAPI(path_to_ckpt=model_path)
-    threshold = 0.7
+    threshold = 0.2
     '''
     Threshold should be 0.5 for ssd_mobilenet_v1
                         0.7 for faster_rcnn_inception_v2
+                        0.2 for ssd_resnet
     '''
     video_name = "aerial2.mp4"
     cap = cv2.VideoCapture('data/videos/{}'.format(video_name))
@@ -50,7 +52,7 @@ if __name__ == '__main__':
     show_one_projection = False
 
     mot_tracker = Tracker(metric, max_age=5, track_type=track_type, n_init=3,
-                          project=display, project_one=show_one_projection, consider_features=True)  # create instance of the SORT tracker
+                          project=display, project_one=show_one_projection, use_reid_model=True)
 
     open('output/%s.txt' % video_name, 'w+')
 
@@ -61,7 +63,6 @@ if __name__ == '__main__':
         if not r:
             break
         img = cv2.resize(img, (1280, 720))
-
         '''
         Pass the image frame to the detector, which in turn return
         the bounding boxes it detected for person in that frame, 
@@ -71,7 +72,6 @@ if __name__ == '__main__':
 
         dets = np.array([[boxes[i][1], boxes[i][0], boxes[i][3], boxes[i][2]] for i in range(len(boxes)) if
                 classes[i] == 1 and scores[i] > threshold]).reshape(-1, 4)
-        # dets[:, 2:4] -= dets[:, 0:2]
         start_time = time.time()
         tracks = mot_tracker.update(dets, image=img)
         cycle_time = time.time() - start_time
