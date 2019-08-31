@@ -55,8 +55,9 @@ if __name__ == '__main__':
                           project=display, project_one=show_one_projection, use_reid_model=True)
 
     open('output/%s.txt' % video_name, 'w+')
-
+    start_time = time.time()
     while True:
+
         # read the video and resize
         r, img = cap.read()
         total_frames += 1
@@ -72,10 +73,9 @@ if __name__ == '__main__':
 
         dets = np.array([[boxes[i][1], boxes[i][0], boxes[i][3], boxes[i][2]] for i in range(len(boxes)) if
                 classes[i] == 1 and scores[i] > threshold]).reshape(-1, 4)
-        start_time = time.time()
+
         tracks = mot_tracker.update(dets, image=img)
-        cycle_time = time.time() - start_time
-        total_time += cycle_time
+
         with open('output/%s.txt' % video_name, 'a+') as out_file:
             for trk in tracks:
                 trk_id_show = trk.id + 1
@@ -87,5 +87,7 @@ if __name__ == '__main__':
                 cv2.imshow('preview', img)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
-
+    cycle_time = time.time() - start_time
+    total_time += cycle_time
+    print("It took %.3f seconds for %d frames (or %.1f fps)" % (total_time, total_frames, total_time/total_frames))
     cv2.destroyAllWindows()
